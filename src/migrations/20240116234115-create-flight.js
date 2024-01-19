@@ -27,7 +27,7 @@ module.exports = {
         allowNull: false,
         references: {
           model: "Airports",
-          key: "code"
+          key: "code" 
         },
         onDelete: "CASCADE",
       },
