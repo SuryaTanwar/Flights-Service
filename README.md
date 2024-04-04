@@ -1,48 +1,51 @@
-This is a base node js project template, which anyone can use as it has been prepared, by keeping some of the most important code principles and project management recommendations. Feel free to change anything. 
+# Flights Search Service
+
+<h3>Objective</h3>
+<p>
+    We need to build a backend system that can support different features for an airline company, our end user is going to be someone who wants to book flights and query about flights so we need a robust system to actually help them give the best experience possible. This doc is solely going to focus on the backend part of the system. We want to prepare the whole backend keeping the fact that the code base should be as maintainable as possible.
+</p>
 
 
-`src` -> Inside the src folder all the actual source code regarding the project will reside, this will not include any kind of tests. (You might want to make separate tests folder)
+<h3>High Level Design of the Project</h3>
+<img src="High-Level-Design.png" alt="High Level Design"/>
 
-Lets take a look inside the `src` folder
 
- - `config` -> In this folder anything and everything regarding any configurations or setup of a library or module will be done. For example: setting up `dotenv` so that we can use the environment variables anywhere in a cleaner fashion, this is done in the `server-config.js`. One more example can be to setup you logging library that can help you to prepare meaningful logs, so configuration for this library should also be done here. 
+<h3>Schema of the Flights Search Service</h3>
 
- - `routes` -> In the routes folder, we register a route and the corresponding middleware and controllers to it. 
+<img src="Schema.png" alt="Schema"/>
 
- - `middlewares` -> they are just going to intercept the incoming requests where we can write our validators, authenticators etc. 
+<h3>Services in the Project</h3>
+<ul>
+<li>
+<h4>
+<a href="https://github.com/SuryaTanwar/API_Gateway_Flights" target="_blank">Flights API Gateway</a></h4>
+</li>
+<li>
+<h4>
+<a href="https://github.com/SuryaTanwar/Flight-Booking-Service" target="_blank">Flights Booking Service</a></h4>
+</li>
+<li>
+<h4>
+<a href="https://github.com/SuryaTanwar/Airline-Notification-Service" target="_blank">Flights Notification Service</a></h4>
+</li>
+</ul>
 
- - `controllers` -> they are kind of the last middlewares as post them you call your business layer to execute the business logic. In controllers we just receive the incoming requests and data and then pass it to the business layer, and once business layer returns an output, we structure the API response in controllers and send the output. 
+**High level flow of the service** 
 
- - `repositories` -> this folder contains all the logic using which we interact the DB by writing queries, all the raw queries or ORM queries will go here.
+We started by identifying the functional and non-functional requirements of the project. We then designed the schema and identified the models: Airplane, City, Airport, Flight and Seats. We then setup these models and created CRUD APIs for each of these models.
 
- - `services` -> contains the buiness logic and interacts with repositories for data from the database
+The attribute city_id in Airport is the foreign key which references the primary key id of City. There is a one to many relationship between these models (one city can have multiple airports) . So, we set up an association between these models by establishing the foreign key relationship using Sequelize ORM.
 
- - `utils` -> contains helper methods, error classes etc.
+Similarly, we identified a one to many relationship between Airport and Flight (one airport can have many flights departing/arriving), and a similar one to many relationship between Airplane and Flight (one airplane can be used for many flights). Hence we setup the foreign key constraints at both the JavaScript and database levels.
 
-### Setup the project
+The GET API for Flights was setup in a manner to search flights based upon different filters like departure airport, arrival airport, minimum and maximum price, trip date, number of seats required etc. We also extended the functionality to sort the results based upon different parameters like arrival time, departure time, price etc. We took motivation from Flipkart Flights for the design of the Flights API.
 
- - Download this template from github and open it in your favourite text editor. 
- - Go inside the folder path and execute the following command:
-  ```
-  npm install
-  ```
- - In the root directory create a `.env` file and add the following env variables
-    ```
-        PORT=<port number of your choice>
-    ```
-    ex: 
-    ```
-        PORT=3000
-    ```
- - go inside the `src` folder and execute the following command:
-    ```
-      npx sequelize init
-    ```
- - By executing the above command you will get migrations, models and seeders folder along with a config.json inside the config folder. 
- - If you're setting up your development environment, then write the username of your db, password of your db and in dialect mention whatever db you are using for ex: mysql, mariadb etc
- - If you're setting up test or prod environment, make sure you also replace the host with the hosted db url.
+We used inner joins (through a functionality called eager loading in Sequelize ORM) to find out the airport name corresponding to an airport ID and return it in the response of GET '/flights' API. There was a challenge while using joins between the `Flights` and `Airports` models, as we need to have custom joins (because these entities are related to each other with the help of `departureAirportId` and `arrivalAirportId`)
 
- - To run the server execute
- ```
- npm run dev    
- ```
+We have impelemented a row level lock on the flights table, to prevent two concurrent requests from writing into the same set of rows. We also implemented transactional capabilities in some of the functions where concurrent requests are possible, this ensures the atomicity of the transaction.
+
+Below is a snapshot depicting the transactional capabilities of the Search Service:
+
+![Concurrency on Transaction in the flight table](./Concurrency_on_flights_table_while_making_a_booking_from_booking_service.PNG)
+
+For the complete design doc of this project please <a href="https://docs.google.com/document/d/1aYYnTRDdsdAxATXUN4y-JhtKhJi7_jCOIb-DlwMKSl0/edit?usp=sharing" target="_blank"> click here
